@@ -1,0 +1,78 @@
+---
+title: "Assignment 6 Task 2"
+author: "Quin Smith"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(broom)
+library(stargazer)
+```
+
+### Introduction
+
+2-3 sentences
+
+
+```{r}
+# read in data
+
+survey <- read_csv(here("data", "conservation_survey.csv")) %>% 
+  clean_names() %>% 
+  transmute(env_id = env_id,
+           pol_or = pol_or)
+
+# bin political affiliations into two groups: liberal and conservative, delete na's
+
+survey_binned <-survey %>% 
+  mutate(pol_binned = case_when(pol_or < 4 ~ "Conservative",
+                                 pol_or > 4 & pol_or < 8 ~ "Liberal")) %>% 
+  filter(pol_binned != "NA")
+
+# see counts 
+
+survey_binned %>% 
+  count(pol_binned, env_id)
+```
+
+### Table
+
+```{r}
+# create table of counts and proportions 
+
+survey_counts <- survey_binned %>% 
+  tabyl(pol_binned, env_id) %>% 
+  rename("Yes" = "1",
+         "No" = "2",
+         "Unsure" = "3")
+
+survey_proportions <- survey_counts %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting(digits = 2) %>% 
+  adorn_ns()
+```
+
+### Chi-square
+
+```{r}
+# column to row names to create a contingency table
+survey_ct <- survey_counts %>% 
+  column_to_rownames(var = "pol_binned")
+
+# run chi-square test on matrix
+survey_x2 <- chisq.test(survey_ct)
+survey_x2
+
+# tidy
+survey_tidy <- tidy(survey_x2)
+```
+
+### Discussion
+
+There is a significant association (ie non-independence) between reported political affiliation and environmentalism ($\chi$^2^(`r survey_tidy$parameter`) = `r survey_tidy$statistic`, *p* = < 0.001).
