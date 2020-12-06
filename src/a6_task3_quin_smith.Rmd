@@ -1,0 +1,86 @@
+---
+title: "Assignment 6, task 3"
+author: "Quin Smith"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(effsize)
+library(broom)
+```
+
+```{r}
+#read in data
+lizards <- read_csv(here("data", "lizards.csv"))
+
+#lizard subset that includes female CNUNs and CNTEs
+lizards_subset <- lizards %>% 
+  select(spp, sex, total_length) %>% 
+  filter(spp %in% c("CNUN", "CNTE"),
+         sex == "F") %>% 
+  mutate(common_name = case_when(
+    spp == "CNUN" ~ "Desert Grassland lizard",
+    spp == "CNTE" ~ "Colorado Checkered lizard"
+  ))
+```
+
+### Visualization
+
+```{r, fig.cap= ""}
+#create visualization
+lizards_subset %>% 
+  ggplot(aes(x = total_length)) +
+  geom_histogram(bins = 10) +
+  labs(x = "Total Length (mm)", y = "Count") +
+  facet_wrap(~common_name, scales = "free") +
+  theme_bw()
+```
+
+```{r}
+#create summary table for mean and sd of total_length across species
+sumry_table <- lizards_subset %>% 
+  group_by(spp) %>% 
+  summarize(mean = mean(total_length, na.rm = TRUE),
+            sd = sd(total_length, na.rm = TRUE))
+
+#create vectors
+cnun_vec <- lizards_subset %>%
+  filter(spp == "CNUN") %>%
+  pull(total_length)
+
+cnun_vec <- cnun_vec[!is.na(cnun_vec)]
+
+cnte_vec <- lizards_subset %>% 
+  filter(spp == "CNTE") %>% 
+  pull(total_length)
+
+cnte_vec <- cnte_vec[!is.na(cnte_vec)]
+
+#exploratory plots
+qqnorm(cnun_vec)
+qqnorm(cnte_vec)
+
+hist(cnun_vec)
+hist(cnte_vec)
+
+#Two sample t-test
+liz_tt <- t.test(cnun_vec, cnte_vec)
+
+liz_tt_tidy <- tidy(liz_tt)
+
+#Cohen-D
+liz_cd <- cohen.d(cnun_vec, cnte_vec)
+```
+On average, female desert grassland lizards are longer than female Colorado checkered lizards (`r round(sumry_table[2,2], 2)` $\pm$ `r round(sumry_table[2,3], 2)` and `r round(sumry_table[1,2], 2)` $\pm$ `r round(sumry_table[2,3], 2)` cm, respectively; mean $\pm$ 1 standard deviation). While the absolute difference in means is `r round(sumry_table[2,2], 2) - r round(sumry_table[1,2], 2)` cm (a `r round(sumry_table[2,2], 2) - r round(sumry_table[1,2], 2)/((r round(sumry_table[2,2], 2) + r round(sumry_table[1,2], 2))/2)*100, 2)`% difference), the difference in means is significant (Welch's two-sample t-test: t(`r round(liz_tt_tidy$parameter, 2)`) = `r round(liz_tt_tidy$statistic, 2)`, p < 0.001), and the effect size is moderate (Cohen's *d* = `r round(liz_cd$estimate, 2)`).
+
+
+
+
+
+
+
