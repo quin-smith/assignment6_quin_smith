@@ -13,6 +13,7 @@ library(here)
 library(janitor)
 library(broom)
 library(stargazer)
+library(kableExtra)
 ```
 
 ### Introduction
@@ -56,6 +57,10 @@ survey_proportions <- survey_counts %>%
   adorn_percentages() %>% 
   adorn_pct_formatting(digits = 2) %>% 
   adorn_ns()
+
+survey_kable <- kable(survey_proportions, col.names = c("", "Yes", "No", "Unsure")) %>% 
+  kable_styling(full_width = FALSE, "hover")
+survey_kable
 ```
 
 ### Chi-square

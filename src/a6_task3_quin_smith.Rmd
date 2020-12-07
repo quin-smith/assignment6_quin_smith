@@ -12,6 +12,7 @@ library(tidyverse)
 library(here)
 library(effsize)
 library(broom)
+library(GGally)
 ```
 
 ```{r}
@@ -62,6 +63,8 @@ cnte_vec <- lizards_subset %>%
 cnte_vec <- cnte_vec[!is.na(cnte_vec)]
 
 #exploratory plots
+ggpairs(lizards_subset)
+
 qqnorm(cnun_vec)
 qqnorm(cnte_vec)
 
