@@ -1,5 +1,5 @@
 ---
-title: "Assignment 6 Task 2"
+title: "Analysis of the association between political and environmentalist self-identification"
 author: "Quin Smith"
 date: "12/6/2020"
 output: html_document
@@ -18,10 +18,10 @@ library(kableExtra)
 
 ### Introduction
 
-2-3 sentences
+This analysis describes the association between survey respondents' self-reported political affiliation ("conservative" or "liberal") and whether or not they consider themselves an "environmentalist."  The data are from an August 2017 survey of 1,331 individuals that was conducted by Chelsea Batavia and Andrews Forest LTER exploring "influences on charitable giving for conservation" (Andrews Forest LTER & Batavia, 2019).  The analysis uses wrangling methods to create binned subsets of those identifying as conservative or liberal, and then performs a Chi-square test to determine the significant association of political affiliation and environmentalism.    
 
 
-```{r}
+```{r, include = FALSE}
 # read in data
 
 survey <- read_csv(here("data", "conservation_survey.csv")) %>% 
@@ -29,7 +29,7 @@ survey <- read_csv(here("data", "conservation_survey.csv")) %>%
   transmute(env_id = env_id,
            pol_or = pol_or)
 
-# bin political affiliations into two groups: liberal and conservative, delete na's
+# bin political affiliations into two groups: liberal and conservative, omit na's
 
 survey_binned <-survey %>% 
   mutate(pol_binned = case_when(pol_or < 4 ~ "Conservative",
@@ -44,7 +44,8 @@ survey_binned %>%
 
 ### Table
 
-```{r}
+**Table 1:** Survey results for individuals responding to "How do you self-identify politically?" and "I consider myself and environmentalist."  The political affiliation survey item was presented on a scale which was amalgamated into two bins, "conservative" and "liberal."  Respondents identifying in the other categories were omitted from this analysis.  Data: Andrews Forest LTER & Batavia, 2019.  
+```{r, echo = FALSE}
 # create table of counts and proportions 
 
 survey_counts <- survey_binned %>% 
@@ -63,9 +64,7 @@ survey_kable <- kable(survey_proportions, col.names = c("", "Yes", "No", "Unsure
 survey_kable
 ```
 
-### Chi-square
-
-```{r}
+```{r, include = FALSE}
 # column to row names to create a contingency table
 survey_ct <- survey_counts %>% 
   column_to_rownames(var = "pol_binned")
@@ -81,3 +80,10 @@ survey_tidy <- tidy(survey_x2)
 ### Discussion
 
 There is a significant association (ie non-independence) between reported political affiliation and environmentalism ($\chi$^2^(`r survey_tidy$parameter`) = `r survey_tidy$statistic`, *p* = < 0.001).
+
+Out of the total number of individuals identifying as conservative (n = 633), `r survey_proportions[1,2]` answered "yes" to the environmentalist question, `r survey_proportions[1,3]` answered "no," and `r survey_proportions[1,4]` answered "unsure."  Out of the total number of individuals identifying as liberal, (n = 523), `r survey_proportions[2,2]` answered "yes," `r survey_proportions[2,3]` answered "no," and `r survey_proportions[2,4]` answered "unsure."  Generally, environmentalism is shown to be associated with liberalism.  However, this analysis does not address sampling bias or the uncertainty with regards to the "unsure" environmentalism category.  Furthermore, a chi-square analysis cannot verify causality so no inferences can be made to explain the associations shown here without further exploration.
+
+### Citations
+
+Andrews Forest LTER Site and C. Batavia. 2019. Influences on charitable giving for conservation: Online survey data of 1,331 respondents across the US, August 2017 ver 3. Environmental Data Initiative. https://doi.org/10.6073/pasta/926e6270e324a1322a900da14d38b96c
+

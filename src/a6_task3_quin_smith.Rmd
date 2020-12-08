@@ -1,5 +1,5 @@
 ---
-title: "Assignment 6, task 3"
+title: "Comparison between the total lengths of female Colorado Checkered whiptail lizards and Desert Grasslands whiptail lizards in Jornada Basin LTER (1989-2006)"
 author: "Quin Smith"
 date: "12/6/2020"
 output: html_document
@@ -13,9 +13,15 @@ library(here)
 library(effsize)
 library(broom)
 library(GGally)
+library(ggbeeswarm)
+library(kableExtra)
 ```
 
-```{r}
+### Introduction
+This analysis compares observations of lengths (mm) of female Colorado Checkered whiptail lizards and Desert Grasslands whiptail lizards collected from the Jornada Experimental Range and the Chihuahuan Desert Rangeland Research Center in New Mexico between 1989 and 2006.  First, observations are visualized using a beeswarm plot to compare general statistical trends in the data.  Second, summary statistics are calculated and displayed in Table 1.  Finally, the means are compared using Welch's two sample t-test and the effect size is estimated using Cohen's d.  Data was collected by Jornada Basin LTER and distributed by David Lightfoot and John Anderson, 2017.   
+
+
+```{r, include = FALSE}
 #read in data
 lizards <- read_csv(here("data", "lizards.csv"))
 
@@ -25,30 +31,49 @@ lizards_subset <- lizards %>%
   filter(spp %in% c("CNUN", "CNTE"),
          sex == "F") %>% 
   mutate(common_name = case_when(
-    spp == "CNUN" ~ "Desert Grassland lizard",
-    spp == "CNTE" ~ "Colorado Checkered lizard"
+    spp == "CNUN" ~ "Desert Grassland whiptail",
+    spp == "CNTE" ~ "Colorado Checkered whiptail"
   ))
 ```
 
 ### Visualization
 
-```{r, fig.cap= ""}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.cap= "**Figure 1:**  Beeswarm plot showing the distributions of total length (mm) from observations of female Colorado Checkered whiptails and Desert Grassland whiptails.  Data was collected from the Jornada Experimental Range and the Chihuahuan Desert Rangeland Research Center between 1989 and 2006.  Mean for each sample is shown as a black point.  The boxplot overlays show sample median (black line), first through third quartile distribution (box), and minimums and maximums (whiskers).  Data: D. Lightfoot, 2017"}
 #create visualization
 lizards_subset %>% 
-  ggplot(aes(x = total_length)) +
-  geom_histogram(bins = 10) +
-  labs(x = "Total Length (mm)", y = "Count") +
-  facet_wrap(~common_name, scales = "free") +
+  ggplot(aes(x = common_name, y = total_length, color = common_name)) +
+  geom_beeswarm(show.legend = FALSE) +
+  scale_color_manual(values = c("#D55E00", "darkorange")) +
+  labs(x = "\nSpecies", y = "Total Length (mm)\n") +
+  stat_boxplot(fill = NA, color = "black") +
+  stat_summary(fun = mean,
+               geom = "point",
+               shape = 20,
+               size = 4,
+               color = "black",
+               fill = "black") +
   theme_bw()
 ```
 
-```{r}
-#create summary table for mean and sd of total_length across species
-sumry_table <- lizards_subset %>% 
-  group_by(spp) %>% 
-  summarize(mean = mean(total_length, na.rm = TRUE),
-            sd = sd(total_length, na.rm = TRUE))
+### Summary Table
 
+**Table 1:**  Table displaying mean and standard deviation for the distributions of total length (mm) from observations of female Desert Colorado Checkered whiptails and Desert Grasslands whiptails.  Data was collected from the Jornada Experimental Range and the Chihuahuan Desert Rangeland Research Center between 1989 and 2006.  Data: D. Lightfoot, 2017
+
+```{r, echo = FALSE, warning = FALSE, message= FALSE}
+#create summary tables for mean and sd of total_length across species
+sumry_table <- lizards_subset %>% 
+  group_by(common_name) %>% 
+  summarize(mean = round(mean(total_length, na.rm = TRUE), 2),
+            sd = round(sd(total_length, na.rm = TRUE), 2))
+
+
+#finalized summary table
+sumry_kable <- kable(sumry_table, col.names = c("Species", "Mean Length (mm)", "SD")) %>% 
+  kable_styling(full_width = FALSE, "hover")
+sumry_kable
+```
+
+```{r, include = FALSE}
 #create vectors
 cnun_vec <- lizards_subset %>%
   filter(spp == "CNUN") %>%
@@ -72,18 +97,29 @@ hist(cnun_vec)
 hist(cnte_vec)
 
 #Two sample t-test
-liz_tt <- t.test(cnun_vec, cnte_vec)
+liz_tt <- t.test(cnte_vec, cnun_vec)
 
 liz_tt_tidy <- tidy(liz_tt)
 
 #Cohen-D
-liz_cd <- cohen.d(cnun_vec, cnte_vec)
+liz_cd <- cohen.d(cnte_vec, cnun_vec)
 ```
-On average, female desert grassland lizards are longer than female Colorado checkered lizards (`r round(sumry_table[2,2], 2)` $\pm$ `r round(sumry_table[2,3], 2)` and `r round(sumry_table[1,2], 2)` $\pm$ `r round(sumry_table[2,3], 2)` cm, respectively; mean $\pm$ 1 standard deviation). While the absolute difference in means is `r round(sumry_table[2,2], 2) - r round(sumry_table[1,2], 2)` cm (a `r round(sumry_table[2,2], 2) - r round(sumry_table[1,2], 2)/((r round(sumry_table[2,2], 2) + r round(sumry_table[1,2], 2))/2)*100, 2)`% difference), the difference in means is significant (Welch's two-sample t-test: t(`r round(liz_tt_tidy$parameter, 2)`) = `r round(liz_tt_tidy$statistic, 2)`, p < 0.001), and the effect size is moderate (Cohen's *d* = `r round(liz_cd$estimate, 2)`).
 
+```{r, include = FALSE}
+#create variables for easy inline referencing
+ccmean <- sumry_table[1,2]
+ccsd <- sumry_table[1,3]
+dgmean <- sumry_table[2,2]
+dgsd <- sumry_table[2,3]
+```
 
+### Discussion
 
+On average, female Colorado Checkered whiptails are longer than female Desert Grasslands whiptails (`r round(ccmean,2)` $\pm$ `r round(ccsd, 2)` mm and `r round(dgmean, 2)` $\pm$ `r round(dgsd, 2)` mm, respectively; mean $\pm$ 1 standard deviation).  The absolute difference in means is `r round(ccmean, 2) - round(dgmean, 2)` mm (a `r round((ccmean - dgmean)/((ccmean + dgmean)/2)*100, 2)`% difference) and the difference in means is significant (Welch's two-sample t-test: t(`r round(liz_tt_tidy$parameter,2)`) = `r round(liz_tt_tidy$statistic,2)`, p < 0.001).  The effect size is low (Cohen's *d* = `r round(liz_cd$estimate,2)`).
 
+### Data Citation
+
+Lightfoot, D. 2017. Lizard pitfall trap data (LTER-II, LTER-III) ver 36. Environmental Data Initiative. https://doi.org/10.6073/pasta/ff37b4cace16a9943575f3fd7067064e 
 
 
 
